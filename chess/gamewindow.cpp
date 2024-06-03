@@ -18,6 +18,8 @@ gameWindow::gameWindow(QWidget *parent)
     configurationGameAreaButtons();
     currentFigure = NULL;
 
+    chessBoard.resize(BOARD_SIZE, vector<Figure*>(BOARD_SIZE));
+
 }
 
 gameWindow::~gameWindow()
@@ -86,40 +88,39 @@ void gameWindow::setButtonIconSize() {
 void gameWindow::startGameFigurePosition() {
 
     //Rook
-    chessBoard[0][0] = Rook(false);
-    chessBoard[0][7] = Rook(false);
-    chessBoard[7][0] = Rook(true);
-    chessBoard[7][7] = Rook(true);
+    chessBoard[0][0] = new Rook(false);
+    chessBoard[0][7] = new Rook(false);
+    chessBoard[7][0] = new Rook(true);
+    chessBoard[7][7] = new Rook(true);
 
     //Knight
-    chessBoard[0][1] = Knight(false);
-    chessBoard[0][6] = Knight(false);
-    chessBoard[7][1] = Knight(true);
-    chessBoard[7][6] = Knight(true);
+    chessBoard[0][1] = new Knight(false);
+    chessBoard[0][6] = new Knight(false);
+    chessBoard[7][1] = new Knight(true);
+    chessBoard[7][6] = new Knight(true);
 
     //Bishop
-    chessBoard[0][2] = Bishop(false);
-    chessBoard[0][5] = Bishop(false);
-    chessBoard[7][2] = Bishop(true);
-    chessBoard[7][5] = Bishop(true);
+    chessBoard[0][2] = new Bishop(false);
+    chessBoard[0][5] = new Bishop(false);
+    chessBoard[7][2] = new Bishop(true);
+    chessBoard[7][5] = new Bishop(true);
 
     //King
-    chessBoard[0][4] = King(false);
-    chessBoard[7][4] = King(true);
+    chessBoard[0][4] = new King(false);
+    chessBoard[7][4] = new King(true);
 
     //Queen
-    chessBoard[0][3] = Queen(false);
-    chessBoard[7][3] = Queen(true);
+    chessBoard[0][3] = new Queen(false);
+    chessBoard[7][3] = new Queen(true);
 
     for (int i = 0; i < 8; ++i) {
-        chessBoard[1][i] = Pawn(false);
-        chessBoard[6][i] = Pawn(true);
+        chessBoard[1][i] = new Pawn(false);
+        chessBoard[6][i] = new Pawn(true);
     }
 
     for (int i = 2; i < 6; i++) {
         for (int j = 0; j < 8; j++) {
-            chessBoard[i][j] = Figure();
-            chessBoard[i][j].isEmpty = true;
+            chessBoard[i][j] = nullptr;
         }
     }
 }
@@ -137,27 +138,16 @@ void gameWindow::on_startButton_clicked()
 }
 
 void gameWindow::setDefaultFigureIcons() {
-
     for (int i = 0; i < BOARD_SIZE; ++i) {
         for (int j = 0; j < BOARD_SIZE; ++j) {
-
             QLayoutItem *item = grid->itemAtPosition(i, j);
             QPushButton *button = qobject_cast<QPushButton*>(item->widget());
 
-            if(!chessBoard[i][j].isEmpty) {
-
-                QIcon figureIcon(chessBoard[i][j].getIconPath());
-                button->setIcon(figureIcon);
+            if (chessBoard[i][j]) {
+                button->setIcon(QIcon(chessBoard[i][j]->getIconPath()));
+            } else {
+                button->setIcon(QIcon());
             }
-
-            else  {
-
-                 button->setIcon(QIcon());
-            }
-
-            // if (chessBoard[i%8][j].isWhite) {
-            //     button->setEnabled(true);
-            // }
         }
     }
 }
@@ -168,19 +158,19 @@ void gameWindow::hilightCurrentPlayerFigures() {
     for (int i = 0; i < BOARD_SIZE; ++i) {
         for (int j = 0; j < BOARD_SIZE; ++j) {
 
-            if(chessBoard[i][j].isEmpty){
+            if(chessBoard[i][j] == nullptr){
                 continue;
             }
 
             QLayoutItem *item = grid->itemAtPosition(i, j);
             QPushButton *button = qobject_cast<QPushButton*>(item->widget());
 
-            if(isWhitePlayerStep && chessBoard[i][j].isWhite){
+            if(isWhitePlayerStep == chessBoard[i][j]->isWhite){
                 button->setEnabled(true);
             }
-            else if (!isWhitePlayerStep && !chessBoard[i][j].isWhite) {
-                button->setEnabled(true);
-            }
+            // else if (!isWhitePlayerStep && !chessBoard[i][j]->isWhite) {
+            //     button->setEnabled(true);
+            // }
             else button->setEnabled(false);
         }
     }
@@ -191,11 +181,11 @@ void gameWindow::hilightCurrentPlayerFigures() {
 
 bool gameWindow::isCurrentStepFigureColor(int i, int j){
 
-    if (!chessBoard[i][j].isEmpty && chessBoard[i][j].isWhite && isWhitePlayerStep)
+    if (chessBoard[i][j] && chessBoard[i][j]->isWhite == isWhitePlayerStep)
         return true;
 
-    else if (!chessBoard[i][j].isEmpty && !chessBoard[i][j].isWhite && !isWhitePlayerStep)
-        return true;
+    // else if (chessBoard[i][j] && !chessBoard[i][j]->isWhite && !isWhitePlayerStep)
+    //     return true;
 
     else return false;
 }
@@ -207,7 +197,7 @@ void gameWindow::onGameAreaButtonClicked() {
     int row = btn->property("row").toInt();
     int column = btn->property("column").toInt();
 
-    if (isCurrentStepFigureColor(row, column) && !chessBoard[row][column].isEmpty) {
+    if (isCurrentStepFigureColor(row, column)) {
 
         setDefaultPlaygroundColor();
         currentFigure = btn;
@@ -221,18 +211,19 @@ void gameWindow::onGameAreaButtonClicked() {
 
         chessBoard[row][column] = chessBoard[currentRow][currentColumn];
 
-        chessBoard[currentRow][currentColumn].isEmpty = true;
-        chessBoard[row][column].isEmpty = false;
+        chessBoard[currentRow][currentColumn] = nullptr;
 
-        QIcon icon(chessBoard[row][column].getIconPath());
+        QIcon icon(chessBoard[row][column]->getIconPath());
         btn->setIcon(icon);
         currentFigure->setIcon(QIcon());
 
         currentFigure = nullptr;
 
-        if (chessBoard[row][column].type == "Pawn" && chessBoard[row][column].isFirstMove == true) {
-
-            chessBoard[row][column].isFirstMove = false;
+        if (chessBoard[row][column] && chessBoard[row][column]->type == "Pawn") {
+            Pawn *pawn = dynamic_cast<Pawn*>(chessBoard[row][column]);
+            if (pawn && pawn->isFirstMove) {
+                pawn->isFirstMove = false;
+            }
         }
 
         setDefaultPlaygroundColor();
@@ -258,10 +249,6 @@ bool gameWindow::isMoveValid(int row, int column) {
         return false;
     }
 
-    // if (chessBoard[row][column].type == "King") {
-    //     return false;
-    // }
-
     return true;
 }
 
@@ -274,7 +261,7 @@ bool gameWindow::isCaptureValid(int row, int column) {
         return false;
     }
 
-    if (chessBoard[row][column].type == "King") {
+    if (chessBoard[row][column] && chessBoard[row][column]->type == "King") {
         return false;
     }
 
@@ -283,7 +270,7 @@ bool gameWindow::isCaptureValid(int row, int column) {
 
 void gameWindow::displayLegalMoves(int row, int column) {
 
-    Figure &figure = chessBoard[row][column];
+    Figure *figure = chessBoard[row][column];
 
     for (int i = 0; i < BOARD_SIZE; ++i) {
         for (int j = 0; j < BOARD_SIZE; ++j) {
@@ -302,32 +289,34 @@ void gameWindow::displayLegalMoves(int row, int column) {
     QLayoutItem *item = grid->itemAtPosition(row, column);
     item->widget()->setEnabled(false);
 
-    QString type = figure.type;
+    QString type = figure->type;
 
     if (type == "Pawn") {
 
-        int direction = figure.isWhite ? -1 : 1;
+        Pawn *pawn = dynamic_cast<Pawn*>(chessBoard[row][column]);
 
-        if(isCaptureValid(row + direction, column) && chessBoard[row + direction][column].isEmpty) {
+        int direction = figure->isWhite ? -1 : 1;
+
+        if(isCaptureValid(row + direction, column) && chessBoard[row + direction][column] == nullptr) {
 
             QLayoutItem *item = grid->itemAtPosition(row + direction, column);
             item->widget()->setEnabled(true);
             item->widget()->setStyleSheet(styleHelper::moveCellColor());
         }
 
-        if(figure.isFirstMove && isCaptureValid(row + direction * 2, column) && chessBoard[row + direction][column].isEmpty && chessBoard[row + direction * 2][column].isEmpty) {
+        if(pawn->isFirstMove && isCaptureValid(row + direction * 2, column) && chessBoard[row + direction][column] == nullptr && chessBoard[row + direction * 2][column] == nullptr) {
 
             QLayoutItem *item = grid->itemAtPosition(row + direction * 2, column);
             item->widget()->setEnabled(true);
             item->widget()->setStyleSheet(styleHelper::moveCellColor());
         }
 
-        if (isCaptureValid(row + direction, column - 1) && !chessBoard[row + direction][column - 1].isEmpty && chessBoard[row + direction][column - 1].isWhite != figure.isWhite) {
+        if (isCaptureValid(row + direction, column - 1) && chessBoard[row + direction][column - 1] && chessBoard[row + direction][column - 1]->isWhite != figure->isWhite) {
             QLayoutItem *item = grid->itemAtPosition(row + direction, column - 1);
             item->widget()->setEnabled(true);
             item->widget()->setStyleSheet(styleHelper::captureCellColor());
         }
-        if (isCaptureValid(row + direction, column + 1) && !chessBoard[row + direction][column + 1].isEmpty && chessBoard[row + direction][column + 1].isWhite != figure.isWhite) {
+        if (isCaptureValid(row + direction, column + 1) && chessBoard[row + direction][column + 1] && chessBoard[row + direction][column + 1]->isWhite != figure->isWhite) {
             QLayoutItem *item = grid->itemAtPosition(row + direction, column + 1);
             item->widget()->setEnabled(true);
             item->widget()->setStyleSheet(styleHelper::captureCellColor());
@@ -349,7 +338,7 @@ void gameWindow::displayLegalMoves(int row, int column) {
                 QLayoutItem *item = grid->itemAtPosition(newRow, newColumn);
                 item->widget()->setEnabled(true);
 
-                if (chessBoard[newRow][newColumn].isEmpty) {
+                if (chessBoard[newRow][newColumn] == nullptr) {
                     item->widget()->setStyleSheet(styleHelper::moveCellColor());
                 }
 
@@ -370,7 +359,7 @@ void gameWindow::displayLegalMoves(int row, int column) {
             int newRow = row + directions[i][0];
             int newColumn = column + directions[i][1];
 
-            while (isCaptureValid(newRow, newColumn) && chessBoard[newRow][newColumn].isEmpty) {
+            while (isCaptureValid(newRow, newColumn) && chessBoard[newRow][newColumn] == nullptr) {
                 QLayoutItem *item = grid->itemAtPosition(newRow, newColumn);
                 item->widget()->setEnabled(true);
 
@@ -379,7 +368,7 @@ void gameWindow::displayLegalMoves(int row, int column) {
                 item->widget()->setStyleSheet(styleHelper::moveCellColor());
             }
 
-            if (isCaptureValid(newRow, newColumn) && !chessBoard[newRow][newColumn].isEmpty && chessBoard[newRow][newColumn].isWhite != figure.isWhite) {
+            if (isCaptureValid(newRow, newColumn) && chessBoard[newRow][newColumn] && chessBoard[newRow][newColumn]->isWhite != figure->isWhite) {
                 QLayoutItem *item = grid->itemAtPosition(newRow, newColumn);
                 item->widget()->setEnabled(true);
                 item->widget()->setStyleSheet(styleHelper::captureCellColor());
@@ -397,7 +386,7 @@ void gameWindow::displayLegalMoves(int row, int column) {
             int newRow = row + directions[i][0];
             int newColumn = column + directions[i][1];
 
-            while (isCaptureValid(newRow, newColumn) && chessBoard[newRow][newColumn].isEmpty) {
+            while (isCaptureValid(newRow, newColumn) && chessBoard[newRow][newColumn] == nullptr) {
                 QLayoutItem *item = grid->itemAtPosition(newRow, newColumn);
                 item->widget()->setEnabled(true);
 
@@ -406,7 +395,7 @@ void gameWindow::displayLegalMoves(int row, int column) {
                 item->widget()->setStyleSheet(styleHelper::moveCellColor());
             }
 
-            if (isCaptureValid(newRow, newColumn) && !chessBoard[newRow][newColumn].isEmpty && chessBoard[newRow][newColumn].isWhite != figure.isWhite) {
+            if (isCaptureValid(newRow, newColumn) && chessBoard[newRow][newColumn] && chessBoard[newRow][newColumn]->isWhite != figure->isWhite) {
                 QLayoutItem *item = grid->itemAtPosition(newRow, newColumn);
                 item->widget()->setEnabled(true);
                 item->widget()->setStyleSheet(styleHelper::captureCellColor());
@@ -425,7 +414,7 @@ void gameWindow::displayLegalMoves(int row, int column) {
             int newRow = row + directions[i][0];
             int newColumn = column + directions[i][1];
 
-            while (isCaptureValid(newRow, newColumn) && chessBoard[newRow][newColumn].isEmpty) {
+            while (isCaptureValid(newRow, newColumn) && chessBoard[newRow][newColumn] == nullptr) {
                 QLayoutItem *item = grid->itemAtPosition(newRow, newColumn);
                 item->widget()->setEnabled(true);
 
@@ -434,7 +423,7 @@ void gameWindow::displayLegalMoves(int row, int column) {
                 item->widget()->setStyleSheet(styleHelper::moveCellColor());
             }
 
-            if (isCaptureValid(newRow, newColumn) && !chessBoard[newRow][newColumn].isEmpty && chessBoard[newRow][newColumn].isWhite != figure.isWhite) {
+            if (isCaptureValid(newRow, newColumn) && chessBoard[newRow][newColumn] && chessBoard[newRow][newColumn]->isWhite != figure->isWhite) {
                 QLayoutItem *item = grid->itemAtPosition(newRow, newColumn);
                 item->widget()->setEnabled(true);
                 item->widget()->setStyleSheet(styleHelper::captureCellColor());
@@ -457,7 +446,7 @@ void gameWindow::displayLegalMoves(int row, int column) {
                 QLayoutItem *item = grid->itemAtPosition(newRow, newColumn);
                 item->widget()->setEnabled(true);
 
-                if (chessBoard[newRow][newColumn].isEmpty) {
+                if (chessBoard[newRow][newColumn] == nullptr) {
                     item->widget()->setStyleSheet(styleHelper::moveCellColor());
                 }
 
@@ -477,7 +466,7 @@ bool gameWindow::checkTheKing() {
     int kingRow, kingColumn;
     for (int i = 0; i < BOARD_SIZE; ++i) {
         for (int j = 0; j < BOARD_SIZE; ++j) {
-            if (chessBoard[i][j].type == "King" && chessBoard[i][j].isWhite != isWhitePlayerStep) {
+            if (chessBoard[i][j] && chessBoard[i][j]->type == "King" && chessBoard[i][j]->isWhite != isWhitePlayerStep) {
                 kingRow = i;
                 kingColumn = j;
             }
@@ -488,16 +477,16 @@ bool gameWindow::checkTheKing() {
     for (int i = 0; i < BOARD_SIZE; ++i) {
         for (int j = 0; j < BOARD_SIZE; ++j) {
 
-            Figure &figure = chessBoard[i][j];
+            Figure *figure = chessBoard[i][j];
 
-            if (figure.isWhite != isWhitePlayerStep && figure.type != "King" && !figure.isEmpty) {
+            if (figure != nullptr && figure->isWhite != isWhitePlayerStep && figure->type != "King") {
 
                 kingValidMoves[i][j] = false;
             }
 
-            if (figure.type == "Pawn" && figure.isWhite == isWhitePlayerStep && !figure.isEmpty) {
+            if (figure != nullptr && figure->type == "Pawn" && figure->isWhite == isWhitePlayerStep) {
 
-                int direction = figure.isWhite ? -1 : 1;
+                int direction = figure->isWhite ? -1 : 1;
 
                 if (isMoveValid(i + direction, j - 1)) {
 
@@ -510,7 +499,7 @@ bool gameWindow::checkTheKing() {
                 }
             }
 
-            if (figure.type == "Knight" && figure.isWhite == isWhitePlayerStep && !figure.isEmpty) {
+            if (figure != nullptr && figure->type == "Knight" && figure->isWhite == isWhitePlayerStep) {
 
                 int knightMoves[8][2] = {
                     {2, 1}, {2, -1}, {-2, 1}, {-2, -1},
@@ -528,7 +517,7 @@ bool gameWindow::checkTheKing() {
                 }
             }
 
-            if (figure.type == "Bishop" && figure.isWhite == isWhitePlayerStep && !figure.isEmpty) {
+            if (figure != nullptr && figure->type == "Bishop" && figure->isWhite == isWhitePlayerStep) {
 
                 int directions[4][2] = {
                     {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
@@ -538,20 +527,16 @@ bool gameWindow::checkTheKing() {
                     int newRow = i + directions[counter][0];
                     int newColumn = j + directions[counter][1];
 
-                    while (isMoveValid(newRow, newColumn) && chessBoard[newRow][newColumn].isEmpty) {
+                    while (isMoveValid(newRow, newColumn)) {
 
+                        kingValidMoves[newRow][newColumn] = false;
                         newRow += directions[counter][0];
                         newColumn += directions[counter][1];
-                        kingValidMoves[newRow][newColumn] = false;
-                    }
-
-                    if (isMoveValid(newRow, newColumn) && !chessBoard[newRow][newColumn].isEmpty && chessBoard[newRow][newColumn].isWhite != figure.isWhite) {
-                        kingValidMoves[newRow][newColumn] = false;
                     }
                 }
             }
 
-            if (figure.type == "Rook" && figure.isWhite == isWhitePlayerStep) {
+            if (figure != nullptr && figure->type == "Rook" && figure->isWhite == isWhitePlayerStep) {
 
                 int directions[4][2] = {
                     {1, 0}, {-1, 0}, {0, 1}, {0, -1}
@@ -561,21 +546,21 @@ bool gameWindow::checkTheKing() {
                     int newRow = i + directions[counter][0];
                     int newColumn = j + directions[counter][1];
 
-                    while (isMoveValid(newRow, newColumn) && chessBoard[newRow][newColumn].isEmpty) {
+                    while (isMoveValid(newRow, newColumn) && chessBoard[newRow][newColumn] == nullptr) {
 
                         newRow += directions[counter][0];
                         newColumn += directions[counter][1];
                         kingValidMoves[newRow][newColumn] = false;
                     }
 
-                    if (isMoveValid(newRow, newColumn) && !chessBoard[newRow][newColumn].isEmpty && chessBoard[newRow][newColumn].isWhite != figure.isWhite) {
+                    if (isMoveValid(newRow, newColumn) && chessBoard[newRow][newColumn] != nullptr && chessBoard[newRow][newColumn]->isWhite != figure->isWhite) {
 
                         kingValidMoves[newRow][newColumn] = false;
                     }
                 }
             }
 
-            if (figure.type == "Queen" && figure.isWhite == isWhitePlayerStep) {
+            if (figure != nullptr && figure->type == "Queen" && figure->isWhite == isWhitePlayerStep) {
 
                 int directions[8][2] = {
                     {1, 0}, {-1, 0}, {0, 1}, {0, -1},
@@ -586,14 +571,14 @@ bool gameWindow::checkTheKing() {
                     int newRow = i + directions[counter][0];
                     int newColumn = j + directions[counter][1];
 
-                    while (isMoveValid(newRow, newColumn) && chessBoard[newRow][newColumn].isEmpty) {
+                    while (isMoveValid(newRow, newColumn) && chessBoard[newRow][newColumn] == nullptr) {
 
+                        kingValidMoves[newRow][newColumn] = false;
                         newRow += directions[counter][0];
                         newColumn += directions[counter][1];
-                        kingValidMoves[newRow][newColumn] = false;
                     }
 
-                    if (isMoveValid(newRow, newColumn) && !chessBoard[newRow][newColumn].isEmpty && chessBoard[newRow][newColumn].isWhite != figure.isWhite) {
+                    if (isMoveValid(newRow, newColumn) && chessBoard[newRow][newColumn] && chessBoard[newRow][newColumn]->isWhite != figure->isWhite) {
 
                         kingValidMoves[newRow][newColumn] = false;
                     }

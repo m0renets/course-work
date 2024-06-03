@@ -11,7 +11,7 @@
 #include <QIcon>
 #include <vector>
 
-
+using namespace std;
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -40,7 +40,9 @@ private:
 
     bool isWhitePlayerStep;
 
-    Figure chessBoard[BOARD_SIZE][BOARD_SIZE];
+    //Figure chessBoard[BOARD_SIZE][BOARD_SIZE];
+
+    vector<vector<Figure*>> chessBoard;
 
     QPushButton *currentFigure;
 
